@@ -1283,6 +1283,19 @@ export default {
       let value = true;
       this.items.forEach((item) => {
         if (
+          item.max_discount > 0 &&
+          item.discount_percentage > item.max_discount
+        ) {
+          evntBus.$emit("show_mesage", {
+            text: __(`Maximum discount for Item {0} is {1}%`, [
+              item.item_name,
+              item.max_discount,
+            ]),
+            color: "error",
+          });
+          value = false;
+        }
+        else if (
           this.pos_profile.posa_max_discount_allowed &&
           !item.posa_offer_applied
         ) {
@@ -1330,19 +1343,7 @@ export default {
           });
           value = false;
         }
-        if (
-          item.max_discount > 0 &&
-          item.discount_percentage > item.max_discount
-        ) {
-          evntBus.$emit("show_mesage", {
-            text: __(`Maximum discount for Item {0} is {1}%`, [
-              item.item_name,
-              item.max_discount,
-            ]),
-            color: "error",
-          });
-          value = false;
-        }
+        
         if (item.has_serial_no) {
           if (
             !this.invoice_doc.is_return &&
