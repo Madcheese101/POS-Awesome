@@ -1641,12 +1641,13 @@ export default {
 
     calc_prices(item, value, $event) {
       if (event.target.id === "rate") {
-        item.discount_percentage = 0;
         if (value < item.price_list_rate) {
           item.discount_amount = this.flt(
             this.flt(item.price_list_rate) - flt(value),
             this.currency_precision
           );
+          item.discount_percentage =
+              (this.flt(item.discount_amount) * 100) / this.flt(item.price_list_rate);
         } else if (value < 0) {
           item.rate = item.price_list_rate;
           item.discount_amount = 0;
@@ -1659,7 +1660,8 @@ export default {
           item.discount_percentage = 0;
         } else {
           item.rate = flt(item.price_list_rate) - flt(value);
-          item.discount_percentage = 0;
+          item.discount_percentage =
+              (this.flt(value) * 100) / this.flt(item.price_list_rate);
         }
       } else if (event.target.id === "discount_percentage") {
         if (value < 0) {
@@ -1667,10 +1669,9 @@ export default {
           item.discount_percentage = 0;
         } else {
           item.rate = this.flt(
-            flt(item.price_list_rate) -
-              (flt(item.price_list_rate) * flt(value)) / 100,
-            this.currency_precision
-          );
+            flt(item.price_list_rate) - (flt(item.price_list_rate) * flt(value)) / 100,
+            this.currency_precision);
+          
           item.discount_amount = this.flt(
             flt(item.price_list_rate) - flt(+item.rate),
             this.currency_precision
