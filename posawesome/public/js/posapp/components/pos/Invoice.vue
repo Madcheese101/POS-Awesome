@@ -1271,16 +1271,37 @@ export default {
         });
         return;
       }
-      if (!this.validate()) {
+      const validate_result = this.validate();
+      // console.log(result);
+      if (validate_result.validated == false) {
         return;
       }
-      evntBus.$emit("show_payment", "true");
-      const invoice_doc = this.proces_invoice();
-      evntBus.$emit("send_invoice_doc_payment", invoice_doc);
+      if (validate_result.exceeded_disc_limit){
+        frappe.warn(
+          'Are you sure you want to proceed?',
+          __(`These items discount exceeded Max Discount Percentage 
+              (${this.pos_profile.posa_max_discount_allowed}%)
+              <br> ${validate_result.exceeded_disc_limit}`),
+          () => {
+            // action to perform if Continue is selected
+            evntBus.$emit("show_payment", "true");
+            const invoice_doc = this.proces_invoice();
+            evntBus.$emit("send_invoice_doc_payment", invoice_doc);
+          },
+          'Continue',
+          true // Sets dialog as minimizable
+        );
+      }else{
+        evntBus.$emit("show_payment", "true");
+        const invoice_doc = this.proces_invoice();
+        evntBus.$emit("send_invoice_doc_payment", invoice_doc);
+      }
+
     },
 
     validate() {
       let value = true;
+      let exceeded_string = '';
       this.items.forEach((item) => {
         if (
           item.max_discount > 0 &&
@@ -1307,14 +1328,19 @@ export default {
             if (
               discount_percentage > this.pos_profile.posa_max_discount_allowed
             ) {
-              evntBus.$emit("show_mesage", {
+              if(this.pos_profile.posa_max_discount_confirmation){
+                exceeded_string += `<br> ${item.item_name}`;
+              }
+              else{
+                evntBus.$emit("show_mesage", {
                 text: __(
                   `Discount percentage for item '{0}' cannot be greater than {1}%`,
                   [item.item_name, this.pos_profile.posa_max_discount_allowed]
                 ),
                 color: "error",
-              });
-              value = false;
+                });
+                value = false;
+              }
             }
           }
         }
@@ -1431,7 +1457,7 @@ export default {
           });
         }
       });
-      return value;
+      return {validated: value, exceeded_disc_limit: exceeded_string};
     },
 
     get_draft_invoices() {
