@@ -258,6 +258,7 @@ fixtures = [
                     "POS Profile-posa_attribute_filter_one",
                     "POS Profile-posa_use_attribute_filter_two",
                     "POS Profile-posa_attribute_filter_two",
+                    "POS Profile-posa_max_discount_confirmation",
                 ),
             ]
         ],

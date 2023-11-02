@@ -1271,18 +1271,55 @@ export default {
         });
         return;
       }
-      if (!this.validate()) {
+      const validate_result = this.validate();
+      // console.log(result);
+      if (validate_result.validated == false) {
         return;
       }
-      evntBus.$emit("show_payment", "true");
-      const invoice_doc = this.proces_invoice();
-      evntBus.$emit("send_invoice_doc_payment", invoice_doc);
+      if (validate_result.exceeded_disc_limit){
+        frappe.warn(
+          'Are you sure you want to proceed?',
+          __(`These items discount exceeded Max Discount Percentage 
+              (${this.pos_profile.posa_max_discount_allowed}%)
+              <br> ${validate_result.exceeded_disc_limit}`),
+          () => {
+            // action to perform if Continue is selected
+            evntBus.$emit("show_payment", "true");
+            const invoice_doc = this.proces_invoice();
+            evntBus.$emit("send_invoice_doc_payment", invoice_doc);
+          },
+          'Continue',
+          true // Sets dialog as minimizable
+        );
+      }else{
+        evntBus.$emit("show_payment", "true");
+        const invoice_doc = this.proces_invoice();
+        evntBus.$emit("send_invoice_doc_payment", invoice_doc);
+      }
+
     },
 
     validate() {
       let value = true;
+      let exceeded_string = '';
       this.items.forEach((item) => {
-        if (this.pos_profile.posa_max_discount_allowed) {
+        if (
+          item.max_discount > 0 &&
+          item.discount_percentage > item.max_discount
+        ) {
+          evntBus.$emit("show_mesage", {
+            text: __(`Maximum discount for Item {0} is {1}%`, [
+              item.item_name,
+              item.max_discount,
+            ]),
+            color: "error",
+          });
+          value = false;
+        }
+        else if (
+          this.pos_profile.posa_max_discount_allowed &&
+          !item.posa_offer_applied
+        ) {
           if (item.discount_amount && this.flt(item.discount_amount) > 0) {
             // calc discount percentage
             const discount_percentage =
@@ -1291,14 +1328,19 @@ export default {
             if (
               discount_percentage > this.pos_profile.posa_max_discount_allowed
             ) {
-              evntBus.$emit("show_mesage", {
+              if(this.pos_profile.posa_max_discount_confirmation){
+                exceeded_string += `<br> ${item.item_name}`;
+              }
+              else{
+                evntBus.$emit("show_mesage", {
                 text: __(
                   `Discount percentage for item '{0}' cannot be greater than {1}%`,
                   [item.item_name, this.pos_profile.posa_max_discount_allowed]
                 ),
                 color: "error",
-              });
-              value = false;
+                });
+                value = false;
+              }
             }
           }
         }
@@ -1327,19 +1369,7 @@ export default {
           });
           value = false;
         }
-        if (
-          item.max_discount > 0 &&
-          item.discount_percentage > item.max_discount
-        ) {
-          evntBus.$emit("show_mesage", {
-            text: __(`Maximum discount for Item {0} is {1}%`, [
-              item.item_name,
-              item.max_discount,
-            ]),
-            color: "error",
-          });
-          value = false;
-        }
+        
         if (item.has_serial_no) {
           if (
             !this.invoice_doc.is_return &&
@@ -1427,7 +1457,7 @@ export default {
           });
         }
       });
-      return value;
+      return {validated: value, exceeded_disc_limit: exceeded_string};
     },
 
     get_draft_invoices() {
@@ -1637,12 +1667,13 @@ export default {
 
     calc_prices(item, value, $event) {
       if (event.target.id === "rate") {
-        item.discount_percentage = 0;
         if (value < item.price_list_rate) {
           item.discount_amount = this.flt(
             this.flt(item.price_list_rate) - flt(value),
             this.currency_precision
           );
+          item.discount_percentage =
+              (this.flt(item.discount_amount) * 100) / this.flt(item.price_list_rate);
         } else if (value < 0) {
           item.rate = item.price_list_rate;
           item.discount_amount = 0;
@@ -1655,7 +1686,8 @@ export default {
           item.discount_percentage = 0;
         } else {
           item.rate = flt(item.price_list_rate) - flt(value);
-          item.discount_percentage = 0;
+          item.discount_percentage =
+              (this.flt(value) * 100) / this.flt(item.price_list_rate);
         }
       } else if (event.target.id === "discount_percentage") {
         if (value < 0) {
@@ -1663,10 +1695,9 @@ export default {
           item.discount_percentage = 0;
         } else {
           item.rate = this.flt(
-            flt(item.price_list_rate) -
-              (flt(item.price_list_rate) * flt(value)) / 100,
-            this.currency_precision
-          );
+            flt(item.price_list_rate) - (flt(item.price_list_rate) * flt(value)) / 100,
+            this.currency_precision);
+          
           item.discount_amount = this.flt(
             flt(item.price_list_rate) - flt(+item.rate),
             this.currency_precision
