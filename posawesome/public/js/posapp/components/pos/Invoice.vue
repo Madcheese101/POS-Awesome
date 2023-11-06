@@ -1657,12 +1657,64 @@ export default {
     },
     update_discount_umount() {
       const value = flt(this.additional_discount_percentage);
+      const round_to_nearest_five = this.pos_profile.posa_round_to_nearest_five;
       if (value >= -100 && value <= 100) {
-        this.discount_amount = (this.Total * value) / 100;
+        if(round_to_nearest_five){
+          this.round_additional_discount_to_five(value);
+        }
+        else{
+          this.discount_amount = (this.Total * value) / 100;
+        }
       } else {
         this.additional_discount_percentage = 0;
         this.discount_amount = 0;
       }
+    },
+
+    round_to_nearest_five(item){
+        if(this.pos_profile.posa_round_to_nearest_five){
+          const not_allowed_groups = this.pos_profile.posa_dont_use_for_item_groups;
+          var apply_rounding = false;
+          
+          if(item){
+            apply_rounding = !not_allowed_groups.some(
+            e => e.item_group == item.item_group);
+            
+            if(item.rate % 5 && apply_rounding){
+              //only round up to multiple of 5
+              //to avoid bypassing the Max Discount Limit
+              result = Math.ceil(item.rate / 5) * 5;
+              
+              //set item rate.
+              item.rate = this.flt(result);
+              //set discount amount for item
+              item.discount_amount = this.flt(
+                this.flt(item.price_list_rate) - this.flt(result),
+                this.currency_precision);
+              //fix discount percentage according to
+              //the new item.discount_amount value
+              item.discount_percentage = 
+                (this.flt(item.discount_amount) * 100) / 
+                this.flt(item.price_list_rate);
+            }
+          }
+          
+        }
+    },
+
+    round_additional_discount_to_five(add_percent){
+        discount = ((this.Total * add_percent) / 100);
+        this.discount_amount = (discount);
+        
+        if(this.subtotal % 5){
+          var remainder = (this.subtotal) % 5;
+
+          discount = discount + remainder;
+          this.discount_amount = (discount);
+        }
+
+        this.additional_discount_percentage = 
+          (this.discount_amount / this.Total) * 100;
     },
 
     calc_prices(item, value, $event) {
@@ -1702,6 +1754,7 @@ export default {
             flt(item.price_list_rate) - flt(+item.rate),
             this.currency_precision
           );
+          this.round_to_nearest_five(item);
         }
       }
     },
@@ -1726,6 +1779,7 @@ export default {
           this.currency_precision
         );
       }
+      this.round_to_nearest_five(item);
     },
 
     calc_uom(item, value) {
@@ -2785,6 +2839,15 @@ export default {
           (this.discount_amount / this.Total) * 100;
       } else {
         this.additional_discount_percentage = 0;
+      }
+    },
+    subtotal(){
+      if(this.subtotal % 5 && 
+      this.pos_profile.posa_round_to_nearest_five)
+      {
+        this.discount_amount = this.flt(this.Total % 5);
+        this.additional_discount_percentage =
+          (this.discount_amount / this.Total) * 100;
       }
     },
   },
