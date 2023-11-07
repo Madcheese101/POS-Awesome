@@ -1272,8 +1272,7 @@ export default {
         return;
       }
       const validate_result = this.validate();
-      // console.log(result);
-      if (validate_result.validated == false) {
+      if (validate_result == false || validate_result.validated == false) {
         return;
       }
       if (validate_result.exceeded_disc_limit){
@@ -1302,102 +1301,148 @@ export default {
     validate() {
       let value = true;
       let exceeded_string = '';
-      this.items.forEach((item) => {
-        if (
-          item.max_discount > 0 &&
-          item.discount_percentage > item.max_discount
-        ) {
+      if (this.invoice_doc.is_return) {
+        if (this.subtotal >= 0) {
           evntBus.$emit("show_mesage", {
-            text: __(`Maximum discount for Item {0} is {1}%`, [
-              item.item_name,
-              item.max_discount,
+            text: __(`Return Invoice Total Not Correct`),
+            color: "error",
+          });
+          return false;
+        }
+        if (this.subtotal * -1 > this.return_doc.total) {
+          evntBus.$emit("show_mesage", {
+            text: __(`Return Invoice Total should not be higher than {0}`, [
+              this.return_doc.total,
             ]),
             color: "error",
           });
-          value = false;
+          return false;
         }
-        else if (
-          this.pos_profile.posa_max_discount_allowed &&
-          !item.posa_offer_applied
-        ) {
-          if (item.discount_amount && this.flt(item.discount_amount) > 0) {
-            // calc discount percentage
-            const discount_percentage =
-              (this.flt(item.discount_amount) * 100) /
-              this.flt(item.price_list_rate);
-            if (
-              discount_percentage > this.pos_profile.posa_max_discount_allowed
-            ) {
-              if(this.pos_profile.posa_max_discount_confirmation){
-                exceeded_string += `<br> ${item.item_name}`;
-              }
-              else{
-                evntBus.$emit("show_mesage", {
-                text: __(
-                  `Discount percentage for item '{0}' cannot be greater than {1}%`,
-                  [item.item_name, this.pos_profile.posa_max_discount_allowed]
-                ),
-                color: "error",
-                });
-                value = false;
-              }
-            }
-          }
-        }
-        if (this.stock_settings.allow_negative_stock != 1) {
-          if (
-            this.invoiceType == "Invoice" &&
-            ((item.is_stock_item && item.stock_qty && !item.actual_qty) ||
-              (item.is_stock_item && item.stock_qty > item.actual_qty))
-          ) {
+        this.items.forEach((item) => {
+          const return_item = this.return_doc.items.find(
+            (element) => element.item_code == item.item_code
+          );
+
+          if (!return_item) {
             evntBus.$emit("show_mesage", {
               text: __(
-                `The existing quantity '{0}' for item '{1}' is not enough`,
-                [item.actual_qty, item.item_name]
+                `The item {0} cannot be returned because it is not in the invoice {1}`,
+                [item.item_name, this.return_doc.name]
               ),
               color: "error",
             });
             value = false;
+          } else if (item.qty * -1 > return_item.qty || item.qty >= 0) {
+            evntBus.$emit("show_mesage", {
+              text: __(`The QTY of the item {0} cannot be greater than {1}`, [
+                item.item_name,
+                return_item.qty,
+              ]),
+              color: "error",
+            });
+            value = false;
           }
-        }
-        if (item.qty == 0) {
-          evntBus.$emit("show_mesage", {
-            text: __(`Quantity for item '{0}' cannot be Zero (0)`, [
-              item.item_name,
-            ]),
-            color: "error",
-          });
-          value = false;
-        }
-        
-        if (item.has_serial_no) {
+        });
+      }
+      else{
+        this.items.forEach((item) => {
           if (
-            !this.invoice_doc.is_return &&
-            (!item.serial_no_selected ||
-              item.stock_qty != item.serial_no_selected.length)
+            item.max_discount > 0 &&
+            item.discount_percentage > item.max_discount
           ) {
             evntBus.$emit("show_mesage", {
-              text: __(`Selected serial numbers of item {0} is incorrect`, [
+              text: __(`Maximum discount for Item {0} is {1}%`, [
+                item.item_name,
+                item.max_discount,
+              ]),
+              color: "error",
+            });
+            value = false;
+          }
+          else if (
+            this.pos_profile.posa_max_discount_allowed &&
+            !item.posa_offer_applied
+          ) {
+            if (item.discount_amount && this.flt(item.discount_amount) > 0) {
+              // calc discount percentage
+              const discount_percentage =
+                (this.flt(item.discount_amount) * 100) /
+                this.flt(item.price_list_rate);
+              if (
+                discount_percentage > this.pos_profile.posa_max_discount_allowed
+              ) {
+                if(this.pos_profile.posa_max_discount_confirmation){
+                  exceeded_string += `<br> ${item.item_name}`;
+                }
+                else{
+                  evntBus.$emit("show_mesage", {
+                  text: __(
+                    `Discount percentage for item '{0}' cannot be greater than {1}%`,
+                    [item.item_name, this.pos_profile.posa_max_discount_allowed]
+                  ),
+                  color: "error",
+                  });
+                  value = false;
+                }
+              }
+            }
+          }
+          if (this.stock_settings.allow_negative_stock != 1) {
+            if (
+              this.invoiceType == "Invoice" &&
+              ((item.is_stock_item && item.stock_qty && !item.actual_qty) ||
+                (item.is_stock_item && item.stock_qty > item.actual_qty))
+            ) {
+              evntBus.$emit("show_mesage", {
+                text: __(
+                  `The existing quantity '{0}' for item '{1}' is not enough`,
+                  [item.actual_qty, item.item_name]
+                ),
+                color: "error",
+              });
+              value = false;
+            }
+          }
+          if (item.qty == 0) {
+            evntBus.$emit("show_mesage", {
+              text: __(`Quantity for item '{0}' cannot be Zero (0)`, [
                 item.item_name,
               ]),
               color: "error",
             });
             value = false;
           }
-        }
-        if (item.has_batch_no) {
-          if (item.stock_qty > item.actual_batch_qty) {
-            evntBus.$emit("show_mesage", {
-              text: __(
-                `The existing batch quantity of item {0} is not enough`,
-                [item.item_name]
-              ),
-              color: "error",
-            });
-            value = false;
+          
+          if (item.has_serial_no) {
+            if (
+              !this.invoice_doc.is_return &&
+              (!item.serial_no_selected ||
+                item.stock_qty != item.serial_no_selected.length)
+            ) {
+              evntBus.$emit("show_mesage", {
+                text: __(`Selected serial numbers of item {0} is incorrect`, [
+                  item.item_name,
+                ]),
+                color: "error",
+              });
+              value = false;
+            }
           }
-        }
-        if (this.pos_profile.posa_allow_user_to_edit_additional_discount) {
+          if (item.has_batch_no) {
+            if (item.stock_qty > item.actual_batch_qty) {
+              evntBus.$emit("show_mesage", {
+                text: __(
+                  `The existing batch quantity of item {0} is not enough`,
+                  [item.item_name]
+                ),
+                color: "error",
+              });
+              value = false;
+            }
+          }
+        });
+      }
+      if (this.pos_profile.posa_allow_user_to_edit_additional_discount) {
           const clac_percentage = (this.discount_amount / this.Total) * 100;
           if (clac_percentage > this.pos_profile.posa_max_discount_allowed) {
             evntBus.$emit("show_mesage", {
@@ -1406,57 +1451,9 @@ export default {
               ]),
               color: "error",
             });
-            value = false;
+            return false;
           }
         }
-        if (this.invoice_doc.is_return) {
-          if (this.subtotal >= 0) {
-            evntBus.$emit("show_mesage", {
-              text: __(`Return Invoice Total Not Correct`),
-              color: "error",
-            });
-            value = false;
-            return value;
-          }
-          if (this.subtotal * -1 > this.return_doc.total) {
-            evntBus.$emit("show_mesage", {
-              text: __(`Return Invoice Total should not be higher than {0}`, [
-                this.return_doc.total,
-              ]),
-              color: "error",
-            });
-            value = false;
-            return value;
-          }
-          this.items.forEach((item) => {
-            const return_item = this.return_doc.items.find(
-              (element) => element.item_code == item.item_code
-            );
-
-            if (!return_item) {
-              evntBus.$emit("show_mesage", {
-                text: __(
-                  `The item {0} cannot be returned because it is not in the invoice {1}`,
-                  [item.item_name, this.return_doc.name]
-                ),
-                color: "error",
-              });
-              value = false;
-              return value;
-            } else if (item.qty * -1 > return_item.qty || item.qty >= 0) {
-              evntBus.$emit("show_mesage", {
-                text: __(`The QTY of the item {0} cannot be greater than {1}`, [
-                  item.item_name,
-                  return_item.qty,
-                ]),
-                color: "error",
-              });
-              value = false;
-              return value;
-            }
-          });
-        }
-      });
       return {validated: value, exceeded_disc_limit: exceeded_string};
     },
 
