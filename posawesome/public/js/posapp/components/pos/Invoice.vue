@@ -2847,6 +2847,10 @@ export default {
           (this.discount_amount / this.Total) * 100;
       }
     },
+    invoice_doc(){
+      const is_return = this.invoice_doc.is_return;
+      evntBus.$emit('disable_items_list', is_return);
+    }
   },
 };
 </script>
