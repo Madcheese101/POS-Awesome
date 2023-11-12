@@ -1513,96 +1513,98 @@ export default {
     },
 
     update_item_detail(item) {
-      const vm = this;
-      frappe.call({
-        method: "posawesome.posawesome.api.posapp.get_item_detail",
-        args: {
-          warehouse: this.pos_profile.warehouse,
-          doc: this.get_invoice_doc(),
-          price_list: this.pos_profile.price_list,
-          item: {
-            item_code: item.item_code,
-            customer: this.customer,
-            doctype: "Sales Invoice",
-            name: "New Sales Invoice 1",
-            company: this.pos_profile.company,
-            conversion_rate: 1,
-            qty: item.qty,
-            price_list_rate: item.price_list_rate,
-            child_docname: "New Sales Invoice Item 1",
-            cost_center: this.pos_profile.cost_center,
-            currency: this.pos_profile.currency,
-            // plc_conversion_rate: 1,
-            pos_profile: this.pos_profile.name,
-            uom: item.uom,
-            tax_category: "",
-            transaction_type: "selling",
-            update_stock: this.pos_profile.update_stock,
-            price_list: this.get_price_list(),
-            has_batch_no: item.has_batch_no,
-            serial_no: item.serial_no,
-            batch_no: item.batch_no,
-            is_stock_item: item.is_stock_item,
+      if(this.invoice_doc.is_return == false){
+        const vm = this;
+        frappe.call({
+          method: "posawesome.posawesome.api.posapp.get_item_detail",
+          args: {
+            warehouse: this.pos_profile.warehouse,
+            doc: this.get_invoice_doc(),
+            price_list: this.pos_profile.price_list,
+            item: {
+              item_code: item.item_code,
+              customer: this.customer,
+              doctype: "Sales Invoice",
+              name: "New Sales Invoice 1",
+              company: this.pos_profile.company,
+              conversion_rate: 1,
+              qty: item.qty,
+              price_list_rate: item.price_list_rate,
+              child_docname: "New Sales Invoice Item 1",
+              cost_center: this.pos_profile.cost_center,
+              currency: this.pos_profile.currency,
+              // plc_conversion_rate: 1,
+              pos_profile: this.pos_profile.name,
+              uom: item.uom,
+              tax_category: "",
+              transaction_type: "selling",
+              update_stock: this.pos_profile.update_stock,
+              price_list: this.get_price_list(),
+              has_batch_no: item.has_batch_no,
+              serial_no: item.serial_no,
+              batch_no: item.batch_no,
+              is_stock_item: item.is_stock_item,
+            },
           },
-        },
-        callback: function (r) {
-          if (r.message) {
-            const data = r.message;
-            if (data.batch_no_data) {
-              item.batch_no_data = data.batch_no_data;
-            }
-            if (
-              item.has_batch_no &&
-              vm.pos_profile.posa_auto_set_batch &&
-              !item.batch_no &&
-              data.batch_no_data
-            ) {
-              item.batch_no_data = data.batch_no_data;
-              vm.set_batch_qty(item, item.batch_no, false);
-            }
-            if (data.has_pricing_rule) {
-            } else if (
-              vm.pos_profile.posa_apply_customer_discount &&
-              vm.customer_info.posa_discount > 0 &&
-              vm.customer_info.posa_discount <= 100
-            ) {
+          callback: function (r) {
+            if (r.message) {
+              const data = r.message;
+              if (data.batch_no_data) {
+                item.batch_no_data = data.batch_no_data;
+              }
               if (
-                item.posa_is_offer == 0 &&
-                !item.posa_is_replace &&
-                item.posa_offer_applied == 0
+                item.has_batch_no &&
+                vm.pos_profile.posa_auto_set_batch &&
+                !item.batch_no &&
+                data.batch_no_data
               ) {
-                if (item.max_discount > 0) {
-                  item.discount_percentage =
-                    item.max_discount < vm.customer_info.posa_discount
-                      ? item.max_discount
-                      : vm.customer_info.posa_discount;
-                } else {
-                  item.discount_percentage = vm.customer_info.posa_discount;
+                item.batch_no_data = data.batch_no_data;
+                vm.set_batch_qty(item, item.batch_no, false);
+              }
+              if (data.has_pricing_rule) {
+              } else if (
+                vm.pos_profile.posa_apply_customer_discount &&
+                vm.customer_info.posa_discount > 0 &&
+                vm.customer_info.posa_discount <= 100
+              ) {
+                if (
+                  item.posa_is_offer == 0 &&
+                  !item.posa_is_replace &&
+                  item.posa_offer_applied == 0
+                ) {
+                  if (item.max_discount > 0) {
+                    item.discount_percentage =
+                      item.max_discount < vm.customer_info.posa_discount
+                        ? item.max_discount
+                        : vm.customer_info.posa_discount;
+                  } else {
+                    item.discount_percentage = vm.customer_info.posa_discount;
+                  }
                 }
               }
-            }
-            if (!item.batch_price) {
-              if (
-                !item.is_free_item &&
-                !item.posa_is_offer &&
-                !item.posa_is_replace
-              ) {
-                item.price_list_rate = data.price_list_rate;
+              if (!item.batch_price) {
+                if (
+                  !item.is_free_item &&
+                  !item.posa_is_offer &&
+                  !item.posa_is_replace
+                ) {
+                  item.price_list_rate = data.price_list_rate;
+                }
               }
+              item.last_purchase_rate = data.last_purchase_rate;
+              item.projected_qty = data.projected_qty;
+              item.reserved_qty = data.reserved_qty;
+              item.conversion_factor = data.conversion_factor;
+              item.stock_qty = data.stock_qty;
+              item.actual_qty = data.actual_qty;
+              item.stock_uom = data.stock_uom;
+              (item.has_serial_no = data.has_serial_no),
+                (item.has_batch_no = data.has_batch_no),
+                vm.calc_item_price(item);
             }
-            item.last_purchase_rate = data.last_purchase_rate;
-            item.projected_qty = data.projected_qty;
-            item.reserved_qty = data.reserved_qty;
-            item.conversion_factor = data.conversion_factor;
-            item.stock_qty = data.stock_qty;
-            item.actual_qty = data.actual_qty;
-            item.stock_uom = data.stock_uom;
-            (item.has_serial_no = data.has_serial_no),
-              (item.has_batch_no = data.has_batch_no),
-              vm.calc_item_price(item);
-          }
-        },
-      });
+          },
+        });
+      }
     },
 
     fetch_customer_details() {
@@ -1656,7 +1658,8 @@ export default {
       const value = flt(this.additional_discount_percentage);
       const round_to_nearest_five = this.pos_profile.posa_round_to_nearest_five;
       if (value >= -100 && value <= 100) {
-        if(round_to_nearest_five){
+        if(round_to_nearest_five &&
+            this.invoice_doc.is_return == false){
           this.round_additional_discount_to_five(value);
         }
         else{
@@ -1669,8 +1672,10 @@ export default {
     },
 
     round_to_nearest_five(item){
-        if(this.pos_profile.posa_round_to_nearest_five){
-          const not_allowed_groups = this.pos_profile.posa_dont_use_for_item_groups;
+        if(this.pos_profile.posa_round_to_nearest_five &&
+          this.invoice_doc.is_return == false){
+          
+            const not_allowed_groups = this.pos_profile.posa_dont_use_for_item_groups;
           var apply_rounding = false;
           
           if(item){
@@ -2840,7 +2845,8 @@ export default {
     },
     subtotal(){
       if(this.subtotal % 5 && 
-      this.pos_profile.posa_round_to_nearest_five)
+      this.pos_profile.posa_round_to_nearest_five &&
+      this.invoice_doc.is_return == false)
       {
         this.discount_amount = this.flt(this.Total % 5);
         this.additional_discount_percentage =
