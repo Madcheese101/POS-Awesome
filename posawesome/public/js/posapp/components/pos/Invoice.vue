@@ -205,7 +205,8 @@
                   <v-spacer></v-spacer>
                   <v-col cols="1">
                     <v-btn
-                      :disabled="!!item.posa_is_offer || !!item.posa_is_replace"
+                      :disabled="!!item.posa_is_offer || !!item.posa_is_replace || 
+                      (invoice_doc.is_return && item.qty<=item.max_return_qty)"
                       icon
                       color="secondary"
                       @click.stop="subtract_one(item)"

@@ -140,6 +140,7 @@ export default {
           new_item.qty = item.qty * -1;
           new_item.stock_qty = item.stock_qty * -1;
           new_item.amount = item.amount * -1;
+          new_item.max_return_qty = item.stock_qty * -1;
           items.push(new_item);
         });
         invoice_doc.items = items;
