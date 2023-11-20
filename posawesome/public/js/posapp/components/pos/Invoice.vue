@@ -1674,7 +1674,7 @@ export default {
 
     round_to_nearest_five(item){
         if(this.pos_profile.posa_round_to_nearest_five &&
-          this.invoice_doc.is_return == false){
+          !this.invoice_doc.is_return){
           
             const not_allowed_groups = this.pos_profile.posa_dont_use_for_item_groups;
           var apply_rounding = false;
