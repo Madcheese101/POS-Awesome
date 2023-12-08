@@ -2,7 +2,7 @@
   <div>
     <v-card
       class="selection mx-auto grey lighten-5 mt-3"
-      style="max-height: 75vh; height: 75vh"
+      style="max-height: 90vh; height: 80vh"
     >
       <v-progress-linear
         :active="loading"
@@ -12,7 +12,7 @@
         color="info"
       ></v-progress-linear>
       <v-row class="items px-2 py-1">
-        <v-col class="pb-0 mb-2">
+        <v-col cols="8" class="pb-0 mb-2">
           <v-text-field
             dense
             clearable
@@ -29,7 +29,7 @@
             ref="debounce_search"
           ></v-text-field>
         </v-col>
-        <v-col cols="3" class="pb-0 mb-2" v-if="pos_profile.posa_input_qty">
+        <v-col class="pb-0 mb-2" v-if="pos_profile.posa_input_qty">
           <v-text-field
             dense
             outlined
@@ -43,7 +43,7 @@
             @keydown.esc="esc_event"
           ></v-text-field>
         </v-col>
-        <v-col cols="2" class="pb-0 mb-2" v-if="pos_profile.posa_new_line">
+        <v-col class="pb-0 mb-2" v-if="pos_profile.posa_new_line">
           <v-checkbox
             v-model="new_line"
             color="accent"
@@ -53,6 +53,19 @@
             hide-details
           ></v-checkbox>
         </v-col>
+        <v-row class="px-3 py-1 pb-0 mb-2">
+          <v-col class="pb-0 mb-2">
+            <v-select
+              :items="items_group"
+              :label="frappe._('Items Group')"
+              dense
+              outlined
+              hide-details
+              v-model="item_group"
+              v-on:change="search_onchange"
+            ></v-select>
+        </v-col>
+        </v-row>
         <v-col cols="12" class="pt-0 mt-0">
           <div fluid class="items" v-if="items_view == 'card'">
             <v-row dense class="overflow-y-auto" style="max-height: 67vh">
@@ -126,18 +139,7 @@
       </v-row>
     </v-card>
     <v-card class="cards mb-0 mt-3 pa-2 grey lighten-5">
-      <v-row no-gutters align="center" justify="center">
-        <v-col cols="12">
-          <v-select
-            :items="items_group"
-            :label="frappe._('Items Group')"
-            dense
-            outlined
-            hide-details
-            v-model="item_group"
-            v-on:change="search_onchange"
-          ></v-select>
-        </v-col>
+      <v-row no-gutters align="center" justify="center" class="items px-2 py-1">
         <v-col cols="3" class="mt-1">
           <v-btn-toggle
             v-model="items_view"
