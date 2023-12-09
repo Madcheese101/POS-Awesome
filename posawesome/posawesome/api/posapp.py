@@ -222,7 +222,6 @@ def get_items(pos_profile, price_list=None, item_group="", search_value=""):
 
         result = []
 
-        # frappe.throw(str(items_data_qb))
         items_data = items_data_qb.run(as_dict=1)
 
         if items_data:
@@ -1396,10 +1395,14 @@ def get_item_attributes(item_code):
 
     for a in attributes:
         values = frappe.db.get_all(
-            "Item Attribute Value",
-            fields=["attribute_value", "abbr"],
-            filters={"parenttype": "Item Attribute", "parent": a.attribute},
-            order_by="idx asc",
+            "Item Variant Attribute",
+            fields=["attribute_value"],
+            filters={"parenttype": "Item", 
+                    "attribute": a.attribute,
+                    "variant_of": item_code},
+            group_by="attribute_value",
+            order_by="attribute_value asc",
+            pluck="attribute_value"
         )
         a.values = values
         if a.attribute in optional_attributes:
