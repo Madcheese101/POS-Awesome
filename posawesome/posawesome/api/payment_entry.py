@@ -26,6 +26,8 @@ def create_payment_entry(
     posting_date=None,
     cost_center=None,
     submit=0,
+    pay_series = None,
+    receive_series = None,
 ):
     # TODO : need to have a better way to handle currency
     date = nowdate() if not posting_date else posting_date
@@ -46,10 +48,10 @@ def create_payment_entry(
     paid_amount, received_amount = set_paid_amount_and_received_amount(
         party_account_currency, bank, amount, payment_type, None, conversion_rate
     )
-    if(payment_type == "Receive"):
-        naming_series = frappe.db.get_single_value('POSAwesome Settings', 'receive_payment_series')
-    if(payment_type == "Pay"):
-        naming_series = frappe.db.get_single_value('POSAwesome Settings', 'pay_payment_series')
+    if(payment_type == "Receive" and receive_series):
+        naming_series = receive_series
+    if(payment_type == "Pay" and pay_series):
+        naming_series = pay_series
 
 
     pe = frappe.new_doc("Payment Entry")
@@ -257,6 +259,8 @@ def process_pos_payment(payload):
     allow_mpesa_reconcile_payments = data.pos_profile.get(
         "posa_allow_mpesa_reconcile_payments"
     )
+    pay_series = data.pos_profile.get("posa_pay_payment_entry_series")
+    receive_series = data.pos_profile.get("posa_receive_payment_entry_series")
     today = nowdate()
 
     new_payments_entry = []
@@ -301,6 +305,8 @@ def process_pos_payment(payload):
                     reference_date=today,
                     cost_center=data.pos_profile.get("cost_center"),
                     submit=1,
+                    pay_series=pay_series,
+                    receive_series=receive_series,
                 )
                 new_payments_entry.append(new_payment_entry)
                 all_payments_entry.append(new_payment_entry)
