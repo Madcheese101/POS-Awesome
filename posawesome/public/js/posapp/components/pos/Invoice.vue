@@ -1179,6 +1179,10 @@ export default {
       doc.payments = this.get_payments();
       doc.taxes = [];
       doc.is_return = this.invoice_doc.is_return;
+      const naming_series = this.pos_profile.posa_return_naming_series;
+      if (doc.is_return && naming_series){
+        doc.naming_series = naming_series;
+      }
       doc.return_against = this.invoice_doc.return_against;
       doc.posa_offers = this.posa_offers;
       doc.posa_coupons = this.posa_coupons;
