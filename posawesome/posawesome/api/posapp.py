@@ -1199,7 +1199,7 @@ def set_customer_info(customer, fieldname, value=""):
 
 @frappe.whitelist()
 def search_invoices_for_return(invoice_name, company):
-    invoices_list = frappe.get_list(
+    invoices_list = frappe.get_all(
         "Sales Invoice",
         filters={
             "name": ["like", f"%{invoice_name}%"],
