@@ -88,12 +88,11 @@
                 hide-details
                 :value="formtCurrency(payment.amount)"
                 @change="
-                  setFormatedCurrency(payment, 'amount', null, true, $event)
+                  setFormatedCurrency(payment, 'amount', null, invoice_doc.is_return, $event)
                 "
                 :rules="[isNumber]"
                 :prefix="currencySymbol(invoice_doc.currency)"
                 @focus="set_rest_amount(payment.idx)"
-                :readonly="invoice_doc.is_return ? true : false"
               ></v-text-field>
             </v-col>
             <v-col
