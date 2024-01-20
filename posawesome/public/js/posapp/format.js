@@ -37,10 +37,10 @@ export default {
                 if (!isNaN(_value)) {
                     value = _value;
                 }
-                if (no_negative && value > 0) {
+                if (no_negative && value < 0) {
                     value = value * -1;
                 }
-                value = this.formtCurrency(value, precision);
+                value = this.formtCurrency($event, precision);
             } catch (e) {
                 console.error(e);
                 value = 0;

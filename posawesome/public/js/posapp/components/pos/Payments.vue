@@ -88,7 +88,7 @@
                 hide-details
                 :value="formtCurrency(payment.amount)"
                 @change="
-                  setFormatedCurrency(payment, 'amount', null, invoice_doc.is_return, $event)
+                  setFormatedCurrency(payment, 'amount', null, true, $event)
                 "
                 :rules="[isNumber]"
                 :prefix="currencySymbol(invoice_doc.currency)"
