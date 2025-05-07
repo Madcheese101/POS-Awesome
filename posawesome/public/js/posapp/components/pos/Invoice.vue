@@ -32,10 +32,15 @@
         </v-col>
         <v-col
           v-if="!pos_profile.posa_allow_sales_order"
-          cols="12"
+          cols="7"
           class="pb-2"
         >
           <Customer></Customer>
+        </v-col>
+        <v-col v-if="!return_doc" cols="5" class="pb-2">
+          <v-select label="بائع الفاتورة" :items="pos_employees" item-text="employee_name" item-value="name"  
+            dense color="primary" hide-details outlined prepend-icon="mdi-account-tie" v-model="sales_employee">
+          </v-select>
         </v-col>
         <v-col v-if="pos_profile.posa_allow_sales_order" cols="3" class="pb-2">
           <v-select
@@ -832,6 +837,8 @@ export default {
       return_doc: "",
       customer: "",
       customer_info: "",
+      pos_employees: [],
+      sales_employee: "",
       discount_amount: 0,
       additional_discount_percentage: 0,
       total_tax: 0,
@@ -911,6 +918,22 @@ export default {
   },
 
   methods: {
+    get_pos_employees() {
+      if (!this.pos_profile) {
+        console.log('No POS Profile for Employees');
+        return;
+      }
+      const vm = this;
+      frappe.call({
+        method: 'posawesome.posawesome.api.posapp.get_pos_employees',
+        args: {pos_profile:vm.pos_profile},
+        callback: function (r) {
+          if (r.message) {
+            vm.pos_employees = r.message;
+          }
+        },
+        });
+    },
     remove_item(item) {
       const index = this.items.findIndex(
         (el) => el.posa_row_id == item.posa_row_id
@@ -1100,6 +1123,7 @@ export default {
       evntBus.$emit("set_pos_coupons", []);
       this.posa_coupons = [];
       this.return_doc = "";
+      this.sales_employee = "";
       const doc = this.get_invoice_doc();
       if (doc.name) {
         old_invoice = this.update_invoice(doc);
@@ -1254,6 +1278,7 @@ export default {
 
     proces_invoice() {
       const doc = this.get_invoice_doc();
+      doc.sales_employee = this.sales_employee;
       if (doc.name) {
         return this.update_invoice(doc);
       } else {
@@ -1265,6 +1290,13 @@ export default {
       if (!this.customer) {
         evntBus.$emit("show_mesage", {
           text: __(`There is no Customer !`),
+          color: "error",
+        });
+        return;
+      }
+      if (!this.sales_employee && !this.return_doc){
+        evntBus.$emit("show_mesage", {
+          text: __(`لم يتم تحديد بائع الفاتورة`),
           color: "error",
         });
         return;
@@ -2722,7 +2754,7 @@ export default {
         this.delivery_charges_rate = this.selcted_delivery_charges.rate;
       } else {
         this.delivery_charges_rate = 0;
-      }
+    }
     },
   },
 
@@ -2751,6 +2783,7 @@ export default {
     });
     evntBus.$on("new_invoice", () => {
       this.invoice_doc = "";
+      this.sales_employee = "";
       this.cancel_invoice();
     });
     evntBus.$on("load_invoice", (data) => {
@@ -2800,6 +2833,10 @@ export default {
     document.addEventListener("keydown", this.shortDeleteFirstItem.bind(this));
     document.addEventListener("keydown", this.shortOpenFirstItem.bind(this));
     document.addEventListener("keydown", this.shortSelectDiscount.bind(this));
+    evntBus.$on('register_pos_profile', (data) => {
+      this.pos_profile = data.pos_profile;
+      this.get_pos_employees();
+    });
   },
   destroyed() {
     document.removeEventListener("keydown", this.shortOpenPayment);
@@ -2808,6 +2845,9 @@ export default {
     document.removeEventListener("keydown", this.shortSelectDiscount);
   },
   watch: {
+    sales_employee(){
+      this.invoice_doc.sales_person = this.sales_employee;
+    },
     customer() {
       this.close_payments();
       evntBus.$emit("set_customer", this.customer);

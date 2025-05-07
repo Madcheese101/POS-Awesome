@@ -1771,3 +1771,16 @@ def get_attributes_values(pos_profile):
 					order_by="attribute_value")
         
     return {"values_one":values_one,"values_two":values_two}
+
+
+@frappe.whitelist()
+def get_pos_employees(pos_profile):
+    pos_profile = json.loads(pos_profile)
+    pos_users = [user["user"] for user in pos_profile.get("applicable_for_users")]
+
+    employees = frappe.db.get_all("Employee",
+                filters={"user_id": ["in",pos_users]},
+                fields=["name", 'employee_name'],
+                order_by="employee_name")
+        
+    return employees

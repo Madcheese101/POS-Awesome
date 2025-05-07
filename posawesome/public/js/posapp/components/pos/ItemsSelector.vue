@@ -66,6 +66,7 @@
               v-on:change="search_onchange"
             ></v-select>
         </v-col>
+        <!-- attribute filters -->
         <v-col class="pb-0 mb-2" v-if="pos_profile.posa_use_attribute_filter_one">
           <v-select :items="attributes_one" :label="pos_profile.posa_attribute_filter_one" 
           dense outlined hide-details v-model="attribute_one" v-on:change="search_onchange">
@@ -76,6 +77,7 @@
             dense outlined hide-details v-model="attribute_two" v-on:change="search_onchange">
               </v-select>
         </v-col>
+        <!-- end attribute filters -->
         </v-row>
         <v-col cols="12" class="pt-0 mt-0">
           <div fluid class="items" v-if="items_view == 'card'">

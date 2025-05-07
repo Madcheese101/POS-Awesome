@@ -263,13 +263,14 @@ fixtures = [
                     "POS Profile-posa_dont_use_for_item_groups",
                     "POS Profile-posa_receive_payment_entry_series",
                     "POS Profile-posa_pay_payment_entry_series",
-                    "POS Profile-posa_return_naming_series"
+                    "POS Profile-posa_return_naming_series",
+                    "Sales Invoice-custom_sales_person"
                 ),
             ]
         ],
     },
     {
         "doctype": "Property Setter",
-        "filters": [["name", "in", ("Sales Invoice-posa_pos_opening_shift-no_copy")]],
+        "filters": [["name", "in", ("Sales Invoice-posa_pos_opening_shift-no_copy", "Employee-main-show_title_field_in_link")]],
     },
 ]
