@@ -1278,7 +1278,7 @@ export default {
 
     proces_invoice() {
       const doc = this.get_invoice_doc();
-      doc.sales_employee = this.sales_employee;
+      doc.sales_person = this.sales_employee;
       if (doc.name) {
         return this.update_invoice(doc);
       } else {
